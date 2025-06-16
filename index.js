@@ -4,47 +4,32 @@ import { ddbClient } from "./ddbClient.js";
 import kuuid from "kuuid";
 
 export const handler = async (event) => {
+    const respond = (statusCode, message) => ({
+        statusCode,
+        headers: {
+            "Access-Control-Allow-Origin": "*"
+        },
+        body: typeof message === "string" ? message : JSON.stringify(message)
+    });
+
     try {
-
-
         const payload = JSON.parse(event.body);
-
         console.log("Payload:", payload);
 
         const { name, address, email, phone } = payload;
 
         const result = await createCustomer(name, address, email, phone);
         if (!result.status) {
-            return {
-                statusCode: 400,
-                headers: {
-                    "Access-Control-Allow-Origin": "*"
-                },
-                body: JSON.stringify({
-                    message: result.message
-                })
-            };
+            return respond(400, { message: result.message });
         }
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
-                message: "Customer details saved successfully",
-                customerId: result.customerId
-            }),
-            headers: {
-                "Access-Control-Allow-Origin": "*"
-            }
-        };
+        return respond(200, {
+            message: "Customer details saved successfully",
+            customerId: result.customerId
+        });
     } catch (error) {
         console.error("Handler Error:", error);
-        return {
-            statusCode: 400,
-            headers: {
-                "Access-Control-Allow-Origin": "*"
-            },
-            body: error.message
-        };
+        return respond(400, error.message);
     }
 };
 
@@ -52,7 +37,6 @@ async function createCustomer(name, address, email, phone) {
     const returnValue = { status: false, message: null, customerId: null };
 
     try {
-        
         const customerId = kuuid.id({ random: 4, millisecond: true });
         const normalizedName = name.trim().toUpperCase().replace(/\s+/g, "_");
 
@@ -68,7 +52,6 @@ async function createCustomer(name, address, email, phone) {
         const PK_lock = `CUSTOMER_PHONE#${phone}`;
         const SK_lock = "LOCK";
 
-        // Transaction
         const input = {
             TransactItems: [
                 {
