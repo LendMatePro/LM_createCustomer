@@ -5,11 +5,26 @@ import kuuid from "kuuid";
 
 export const handler = async (event) => {
     try {
+
+
         const payload = JSON.parse(event.body);
+
+        console.log("Payload:", payload);
+
         const { name, address, email, phone } = payload;
 
         const result = await createCustomer(name, address, email, phone);
-        if (!result.status) throw new Error(result.message);
+        if (!result.status) {
+            return {
+                statusCode: 400,
+                headers: {
+                    "Access-Control-Allow-Origin": "*"
+                },
+                body: JSON.stringify({
+                    message: result.message
+                })
+            };
+        }
 
         return {
             statusCode: 200,
@@ -46,7 +61,7 @@ async function createCustomer(name, address, email, phone) {
         const SK_main = customerId;
 
         // Search record
-        const PK_search = "CUSTOMER_SEARCH";
+        const PK_search = "CUSTOMER_LOOKUP";
         const SK_search = `${phone}#${normalizedName}`;
 
         // Lock record
