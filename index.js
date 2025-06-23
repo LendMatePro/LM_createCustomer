@@ -60,6 +60,7 @@ async function createCustomer(name, address, email, phone) {
                         Item: marshall({
                             PK: PK_main,
                             SK: SK_main,
+                            customerId,
                             name,
                             address,
                             email,
