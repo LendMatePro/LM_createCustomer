@@ -44,16 +44,21 @@ async function createCustomer(name, address, email, phone) {
         const PK_main = "CUSTOMER";
         const SK_main = customerId;
 
-        // Search record
-        const PK_search = "CUSTOMER_LOOKUP";
-        const SK_search = `${phone}#${normalizedName}`;
+        // Phone lookup
+        const PK_phone = "CUSTOMER_PHONE";
+        const SK_phone = phone;
 
-        // Lock record
+        // Name lookup
+        const PK_name = "CUSTOMER_NAME";
+        const SK_name = normalizedName;
+
+        // Optional: Lock record for phone uniqueness
         const PK_lock = `CUSTOMER_PHONE#${phone}`;
         const SK_lock = "LOCK";
 
         const input = {
             TransactItems: [
+                // Main customer record
                 {
                     Put: {
                         TableName: process.env.DYNAMODB_TABLE_NAME,
@@ -69,23 +74,39 @@ async function createCustomer(name, address, email, phone) {
                         ConditionExpression: "attribute_not_exists(PK)"
                     }
                 },
+                // Phone lookup record
                 {
                     Put: {
                         TableName: process.env.DYNAMODB_TABLE_NAME,
                         Item: marshall({
-                            PK: PK_search,
-                            SK: SK_search,
-                            Info: {
-                                customerId,
-                                name,
-                                email,
-                                address,
-                                phone
-                            }
+                            PK: PK_phone,
+                            SK: SK_phone,
+                            customerId,
+                            name,
+                            address,
+                            email,
+                            phone
                         }),
                         ConditionExpression: "attribute_not_exists(PK)"
                     }
                 },
+                // Name lookup record
+                {
+                    Put: {
+                        TableName: process.env.DYNAMODB_TABLE_NAME,
+                        Item: marshall({
+                            PK: PK_name,
+                            SK: SK_name,
+                            customerId,
+                            name,
+                            address,
+                            email,
+                            phone
+                        }),
+                        ConditionExpression: "attribute_not_exists(PK)"
+                    }
+                },
+                // Phone lock record (for uniqueness)
                 {
                     Put: {
                         TableName: process.env.DYNAMODB_TABLE_NAME,
